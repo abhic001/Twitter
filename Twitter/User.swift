@@ -8,77 +8,61 @@
 
 import UIKit
 
-var _currentUser: User?
-let currentUserKey = "CurrentUserKey"
-let userDidLoginNotification = "userDidLoginNotification"
-let userDidLogoutNotification = "userDidLogoutNotification"
-
-
 class User: NSObject {
-
-    var name: String?
-    var screenName: String?
-    var profileImageUrl: String?
-    var tagline: String?
-    var dictionary: NSDictionary
     
+    var name: String?
+    var screenname: String?
+    var profileUrl: URL?
+    var tagline: String?
+    
+    var dictionary: NSDictionary?
     
     init(dictionary: NSDictionary) {
         self.dictionary = dictionary
+        
         name = dictionary["name"] as? String
-        screenName = dictionary["screen_name"] as? String
-        profileImageUrl = dictionary["profile_image_url"] as? String
+        screenname = dictionary["screen_name"] as? String
+        
+        let profileUrlString = dictionary["profile_image_url_https"] as? String
+        if let profileUrlString = profileUrlString {
+            profileUrl = URL(string: profileUrlString)
+        }
+        
         tagline = dictionary["description"] as? String
         
-        
     }
     
-    func logout() {
-        User.currentUser = nil
-        TwitterClient.sharedInstance.requestSerializer.removeAccessToken()
-        
-        NotificationCenter.default.post(name: Notification.Name(rawValue: userDidLogoutNotification), object: nil)
-    
-    }
-    
+    static var _currentUser: User?
     class var currentUser: User? {
         get {
-        if _currentUser == nil {
-            let data = UserDefaults.standard.object(forKey: currentUserKey) as? Data
-        if let data = data {
-            let dictionary = try! JSONSerialization.jsonObject(with: data, options: []) as! NSDictionary
-        _currentUser = User(dictionary: dictionary)
-        
-        }
-        
-        }
-        
-        
-        
+            if _currentUser == nil {
+                let defaults = UserDefaults.standard
+                
+                let userData = defaults.object(forKey: "currentUserData") as? NSData
+                
+                if let userData = userData {
+                    let dictionary = try! JSONSerialization.jsonObject(with: userData as Data, options: []) as! NSDictionary
+                    _currentUser = User(dictionary: dictionary)
+                }
+            }
+            
             return _currentUser
+            
         }
+        
         set(user) {
             _currentUser = user
             
-            if _currentUser != nil {
+            let defaults = UserDefaults.standard
+            
+            if let user = user {
+                let data = try! JSONSerialization.data(withJSONObject: user.dictionary!, options: [])
                 
-                let data = try! JSONSerialization.data(withJSONObject: (user!.dictionary), options: [])
-                
-                UserDefaults.standard.set(data, forKey: currentUserKey)
-                
+                defaults.set(data, forKey: "currentUserData")
             } else {
-                UserDefaults.standard.set(nil, forKey: currentUserKey)
-                
+                defaults.removeObject(forKey: "currentUserData")
             }
-            UserDefaults.standard.synchronize()
-
+            defaults.synchronize()
         }
     }
 }
-
-
-
-
-
-
-

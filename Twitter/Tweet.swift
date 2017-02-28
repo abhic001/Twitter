@@ -10,41 +10,45 @@ import UIKit
 
 class Tweet: NSObject {
 
-    var user: User?
     var text: String?
-    var createdAtString: String?
-    var createdAt: Date?
-    var id: String?
-    var retweetCount: NSNumber?
-    var likeCount: NSNumber?
+    var timestamp: Date?
+    var retweetCount: Int = 0
+    var favoritesCount: Int = 0
+    var name: String?
+    var profileImgUrlString: String?
+    var screenName: String?
+    var id_str: String?
+    var favorited: Bool?
     var retweeted: Bool?
-    var liked: Bool?
-    
     
     init(dictionary: NSDictionary) {
-        user = User(dictionary: dictionary["user"] as! NSDictionary)
         text = dictionary["text"] as? String
-        createdAtString = dictionary["created_at"] as? String
-        id = dictionary["id_str"] as? String
-        retweetCount = dictionary["retweet_count"] as? NSNumber
-        likeCount = dictionary["favorite_count"] as? NSNumber
+        retweetCount = (dictionary["retweet_count"] as? Int) ?? 0
+        favoritesCount = (dictionary["favorite_count"] as? Int) ?? 0
+        name = dictionary.value(forKeyPath: "user.name") as! String?
+        profileImgUrlString = dictionary.value(forKeyPath: "user.profile_image_url_https") as! String?
+        screenName = dictionary.value(forKeyPath: "user.screen_name") as? String
+        id_str = dictionary["id_str"] as? String
+        favorited = dictionary["favorited"] as? Bool
         retweeted = dictionary["retweeted"] as? Bool
-        liked = dictionary["favorited"] as? Bool
         
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE MMM d HH:mm:ss Z y"
-        createdAt = formatter.date(from: createdAtString!)
+        let timestampString = dictionary["created_at"] as? String
+        
+        if let timestampString = timestampString {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEE MMM d HH:mm:ss Z y"
+            timestamp = formatter.date(from: timestampString)
+        }
     }
     
-    class func tweetsWithArray(_ array: [NSDictionary]) -> [Tweet]{
-        
+    class func tweetsWithArray(dictionaries: [NSDictionary]) -> [Tweet] {
         var tweets = [Tweet]()
-        for dictionary in array {
-            tweets.append(Tweet(dictionary: dictionary))
-        }
         
+        for dictionary in dictionaries {
+            let tweet = Tweet(dictionary: dictionary)
+            
+            tweets.append(tweet)
+        }
         return tweets
     }
-    
-    
 }
