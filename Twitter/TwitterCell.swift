@@ -8,8 +8,12 @@
 
 import UIKit
 
-class TwitterCell: UITableViewCell {
+protocol TweetCellDelegate: class  {
+    func profileImageViewTapped(cell: TwitterCell, user: User)
+}
 
+class TwitterCell: UITableViewCell {
+    
     @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var screenNameLabel: UILabel!
@@ -19,6 +23,9 @@ class TwitterCell: UITableViewCell {
     @IBOutlet weak var favoriteCountLabel: UILabel!
     @IBOutlet weak var retweetImageView: UIImageView!
     @IBOutlet weak var favoriteImageView: UIImageView!
+    
+    
+    weak var delegate: TweetCellDelegate?
     
     var tweet: Tweet! {
         willSet {
@@ -86,17 +93,21 @@ class TwitterCell: UITableViewCell {
         super.awakeFromNib()
         
         let cellTapRecognizerRetweet = UITapGestureRecognizer(target: self, action: #selector(TwitterCell.onTapRetweet(_:)))
-        cellTapRecognizerRetweet.cancelsTouchesInView = false
+        cellTapRecognizerRetweet.cancelsTouchesInView = true
         retweetImageView.addGestureRecognizer(cellTapRecognizerRetweet)
         
         let cellTapRecognizerFavorite = UITapGestureRecognizer(target: self, action: #selector(TwitterCell.onTapFavorite(_:)))
-        cellTapRecognizerFavorite.cancelsTouchesInView = false
+        cellTapRecognizerFavorite.cancelsTouchesInView = true
         favoriteImageView.addGestureRecognizer(cellTapRecognizerFavorite)
+        
+        let cellTapRecognizerProfile = UITapGestureRecognizer(target: self, action: #selector(TwitterCell.onTapProfile(_:)))
+        cellTapRecognizerProfile.cancelsTouchesInView = true
+        avatarImageView.addGestureRecognizer(cellTapRecognizerProfile)
     }
-
+    
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
-
+        
         // Configure the view for the selected state
     }
     
@@ -115,7 +126,7 @@ class TwitterCell: UITableViewCell {
             print("already retweeted")
             TwitterClient.shared?.unretweet(id: self.tweet.id_str!, success: { (response: Tweet) in
                 self.retweetImageView.image = UIImage(named: "retweet-icon")
-                self.retweetCountLabel.text = self.convertCount(count: response.retweetCount)
+                self.retweetCountLabel.text = self.convertCount(count: response.retweetCount - 1)
                 self.tweet.retweetCount = response.retweetCount
                 self.tweet.retweeted = false
                 print("unretweeted")
@@ -126,7 +137,6 @@ class TwitterCell: UITableViewCell {
     }
     
     func onTapFavorite(_ sender: Any) {
-        print("tapped favorite")
         
         TwitterClient.shared?.favorite(id: tweet.id_str!, success: { (response: Tweet) in
             print(response.text!)
@@ -148,5 +158,12 @@ class TwitterCell: UITableViewCell {
             })
         })
     }
-
+    
+    func onTapProfile(_ sender: Any) {
+        print("tap profile")
+        if let delegate = delegate{
+            delegate.profileImageViewTapped(cell: self, user: self.tweet.user!)
+        }
+    }
+    
 }
